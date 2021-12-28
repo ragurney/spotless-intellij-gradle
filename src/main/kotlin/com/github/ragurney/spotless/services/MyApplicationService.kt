@@ -1,6 +1,6 @@
-package org.jetbrains.plugins.template.services
+package com.github.ragurney.spotless.services
 
-import org.jetbrains.plugins.template.MyBundle
+import com.github.ragurney.spotless.MyBundle
 
 class MyApplicationService {
 
