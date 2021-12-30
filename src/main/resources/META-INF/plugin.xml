@@ -5,14 +5,14 @@
     <vendor>ragurney</vendor>
 
     <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.gradle</depends>
 
-    <extensions defaultExtensionNs="com.intellij">
-        <applicationService serviceImplementation="com.github.ragurney.spotless.services.MyApplicationService"/>
-        <projectService serviceImplementation="com.github.ragurney.spotless.services.MyProjectService"/>
-    </extensions>
-
-    <applicationListeners>
-        <listener class="com.github.ragurney.spotless.listeners.MyProjectManagerListener"
-                  topic="com.intellij.openapi.project.ProjectManagerListener"/>
-    </applicationListeners>
+    <actions>
+        <action id="com.github.ragurney.spotless.actions.ReformatCodeAction"
+                class="com.github.ragurney.spotless.actions.ReformatCodeAction" text="Reformat Code with Spotless"
+                icon="SpotlessIcons.SPOTLESS_DEFAULT_ICON"
+                description="Reformats code with Spotless">
+            <add-to-group group-id="CodeFormatGroup" relative-to-action="ReformatCode" anchor="before"/>
+        </action>
+    </actions>
 </idea-plugin>
