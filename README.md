@@ -1,13 +1,15 @@
 # Spotless Intellij Gradle
 
 ![Build](https://github.com/ragurney/spotless/workflows/Build/badge.svg)
-[![Version](https://img.shields.io/jetbrains/plugin/v/PLUGIN_ID.svg)](https://plugins.jetbrains.com/plugin/PLUGIN_ID)
-[![Downloads](https://img.shields.io/jetbrains/plugin/d/PLUGIN_ID.svg)](https://plugins.jetbrains.com/plugin/PLUGIN_ID)
+[![Version](https://img.shields.io/jetbrains/plugin/v/18321.svg)](https://plugins.jetbrains.com/plugin/18321)
+[![Downloads](https://img.shields.io/jetbrains/plugin/d/18321.svg)](https://plugins.jetbrains.com/plugin/18321)
 
 <!-- Plugin description -->
 An IntelliJ plugin to allow running the [spotless](https://github.com/diffplug/spotless) gradle task
 from within the IDE.
 <!-- Plugin description end -->
+
+![spotlessdemo](http://recordit.co/SsnlBeDCVt.gif)
 
 ## Features
 * `spotlessApply` can be run on the current file via <kbd>Code</kbd> > <kbd>Reformat Code with Spotless</kbd>.
