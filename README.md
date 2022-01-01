@@ -9,7 +9,7 @@ An IntelliJ plugin to allow running the [spotless](https://github.com/diffplug/s
 from within the IDE.
 <!-- Plugin description end -->
 
-![spotlessdemo](http://recordit.co/SsnlBeDCVt.gif)
+![spotlessdemo](https://user-images.githubusercontent.com/15261525/147841908-d5cc3bda-56c8-4cbd-ba29-13ebe29f6a1d.gif)
 
 ## Features
 * `spotlessApply` can be run on the current file via <kbd>Code</kbd> > <kbd>Reformat Code with Spotless</kbd>.
