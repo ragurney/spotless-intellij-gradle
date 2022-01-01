@@ -19,12 +19,21 @@ from within the IDE.
 >**NOTE:** Before using this extension, ensure you've [configured Spotless](https://github.com/diffplug/spotless/tree/master/plugin-gradle)
 correctly in your Gradle build file. (Run ./gradlew spotlessDiagnose to prepare & validate Spotless.)
 
-- Using IDE built-in plugin system:
+### Using IDE built-in plugin system:
 
-  <kbd>Settings/Preferences</kbd> > <kbd>Plugins</kbd> > <kbd>Marketplace</kbd> > <kbd>Search for "spotless"</kbd> >
+  <kbd>Settings/Preferences</kbd> > <kbd>Plugins</kbd> > <kbd>Marketplace</kbd> > <kbd>Search for "Spotless Gradle"</kbd> >
   <kbd>Install Plugin</kbd>
 
-- Manually:
+### Manually:
 
   Download the [latest release](https://github.com/ragurney/spotless/releases/latest) and install it manually using
   <kbd>Settings/Preferences</kbd> > <kbd>Plugins</kbd> > <kbd>⚙️</kbd> > <kbd>Install plugin from disk...</kbd>
+
+## How it Works
+This plugin runs the `spotlessApply` Gradle task on the current file using the [Spotless IDE hook](https://github.com/diffplug/spotless/blob/main/plugin-gradle/IDE_HOOK.md). 
+  
+## Release Notes
+See [CHANGELOG.md](CHANGELOG.md)
+
+## License
+See [License](LICENSE)
