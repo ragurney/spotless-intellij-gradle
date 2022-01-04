@@ -6,10 +6,12 @@
 
 <!-- Plugin description -->
 An IntelliJ plugin to allow running the [spotless](https://github.com/diffplug/spotless) gradle task
-from within the IDE.
-<!-- Plugin description end -->
+from within the IDE on the current file selected in the editor. 
+
+You may find the spotless action via <kbd>Code</kbd> > <kbd>Reformat Code with Spotless</kbd>.
 
 ![spotlessdemo](https://user-images.githubusercontent.com/15261525/147841908-d5cc3bda-56c8-4cbd-ba29-13ebe29f6a1d.gif)
+<!-- Plugin description end -->
 
 ## Features
 * `spotlessApply` can be run on the current file via <kbd>Code</kbd> > <kbd>Reformat Code with Spotless</kbd>.
