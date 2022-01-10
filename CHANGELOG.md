@@ -4,6 +4,9 @@
 
 ## [Unreleased]
 
+## [1.0.2]
+- Updated version range lower bound to 211
+
 ## [1.0.1]
 - Update README for a more helpful plugin description
 
