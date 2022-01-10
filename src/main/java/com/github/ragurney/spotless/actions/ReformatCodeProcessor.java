@@ -76,8 +76,8 @@ public class ReformatCodeProcessor extends AbstractLayoutCodeProcessor {
       ExternalSystemTaskExecutionSettings settings = constructTaskExecutionSettings(fileToProcess);
 
       // Execute gradle task
-      ExternalSystemUtil.runTask(settings, DefaultRunExecutor.EXECUTOR_ID, myProject, GradleConstants.SYSTEM_ID,
-          null, ProgressExecutionMode.IN_BACKGROUND_ASYNC, false);
+      ExternalSystemUtil.runTask(settings, DefaultRunExecutor.EXECUTOR_ID, myProject, GradleConstants.SYSTEM_ID, null,
+          ProgressExecutionMode.IN_BACKGROUND_ASYNC, false);
     }));
   }
 
@@ -95,7 +95,8 @@ public class ReformatCodeProcessor extends AbstractLayoutCodeProcessor {
     ExternalSystemTaskExecutionSettings settings = new ExternalSystemTaskExecutionSettings();
     settings.setExternalProjectPath(myProject.getBasePath());
     settings.setTaskNames(List.of("spotlessApply"));
-    settings.setScriptParameters(String.format("-PspotlessIdeHook=\"%s\"", fileToProcess.getVirtualFile().getPath()));
+    settings.setScriptParameters(
+        String.format("-PspotlessIdeHook=\"%s\" --no-configuration-cache", fileToProcess.getVirtualFile().getPath()));
     settings.setVmOptions("");
     settings.setExternalSystemIdString(GradleConstants.SYSTEM_ID.getId());
     return settings;

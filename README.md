@@ -11,6 +11,8 @@ from within the IDE on the current file selected in the editor.
 You may find the spotless action via <kbd>Code</kbd> > <kbd>Reformat Code with Spotless</kbd>.
 
 ![spotlessdemo](https://user-images.githubusercontent.com/15261525/147841908-d5cc3bda-56c8-4cbd-ba29-13ebe29f6a1d.gif)
+
+Report bugs or contribute enhancements on GitHub [(ragurney/spotless-intellij-gradle)](https://github.com/ragurney/spotless-intellij-gradle)
 <!-- Plugin description end -->
 
 ## Features
