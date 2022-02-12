@@ -4,9 +4,10 @@
 
 ## [Unreleased]
 
+## [1.0.4]
+- Add Gradle version parsing to determine if we should append `--no-configuration-cache` option to the `spotlessApply` command.
+
 ## [1.0.3]
-* Add a link to the GitHub repository in the plugin description
-* Add the `--no-configuration-cache` option to the `spotlessApply` task execution to address issue #18
 
 ## [1.0.2]
 - Updated version range lower bound to 211
