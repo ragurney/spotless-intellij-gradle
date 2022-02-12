@@ -12,6 +12,7 @@ import com.intellij.openapi.externalSystem.model.execution.ExternalSystemTaskExe
 import com.intellij.openapi.externalSystem.service.execution.ProgressExecutionMode;
 import com.intellij.openapi.externalSystem.util.ExternalSystemUtil;
 import com.intellij.openapi.util.NlsContexts;
+import com.intellij.openapi.util.Version;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.FileViewProvider;
 import com.intellij.psi.PsiDocumentManager;
@@ -20,9 +21,12 @@ import com.intellij.psi.PsiInvalidElementAccessException;
 import com.intellij.util.IncorrectOperationException;
 import com.intellij.util.SlowOperations;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.FutureTask;
+import org.gradle.util.GradleVersion;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.plugins.gradle.settings.GradleSettings;
 import org.jetbrains.plugins.gradle.util.GradleConstants;
 
 
@@ -31,6 +35,7 @@ import org.jetbrains.plugins.gradle.util.GradleConstants;
  */
 public class ReformatCodeProcessor extends AbstractLayoutCodeProcessor {
   private static final Logger LOG = Logger.getInstance(ReformatCodeProcessor.class);
+  private static final Version NO_CONFIG_CACHE_MIN_GRADLE_VERSION = new Version(6, 6, 0);
 
   public ReformatCodeProcessor(@NotNull PsiFile file) {
     super(file.getProject(), file, getProgressText(), getCommandName(), true);
@@ -92,14 +97,25 @@ public class ReformatCodeProcessor extends AbstractLayoutCodeProcessor {
    */
   @NotNull
   private ExternalSystemTaskExecutionSettings constructTaskExecutionSettings(PsiFile fileToProcess) {
+    String noConfigCacheOption = shouldAddNoConfigCacheOption() ? " --no-configuration-cache" : "";
+
     ExternalSystemTaskExecutionSettings settings = new ExternalSystemTaskExecutionSettings();
     settings.setExternalProjectPath(myProject.getBasePath());
     settings.setTaskNames(List.of("spotlessApply"));
     settings.setScriptParameters(
-        String.format("-PspotlessIdeHook=\"%s\" --no-configuration-cache", fileToProcess.getVirtualFile().getPath()));
+        String.format("-PspotlessIdeHook=\"%s\"%s", fileToProcess.getVirtualFile().getPath(), noConfigCacheOption));
     settings.setVmOptions("");
     settings.setExternalSystemIdString(GradleConstants.SYSTEM_ID.getId());
     return settings;
+  }
+
+  private boolean shouldAddNoConfigCacheOption() {
+    GradleVersion gradleVersion = Objects.requireNonNull(
+        GradleSettings.getInstance(myProject).getLinkedProjectSettings(Objects.requireNonNull(myProject.getBasePath())))
+        .resolveGradleVersion();
+
+    return Objects.requireNonNull(Version.parseVersion(gradleVersion.getVersion()))
+        .isOrGreaterThan(NO_CONFIG_CACHE_MIN_GRADLE_VERSION.major, NO_CONFIG_CACHE_MIN_GRADLE_VERSION.minor);
   }
 
   @Nullable
