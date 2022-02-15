@@ -116,7 +116,7 @@ public class ReformatCodeProcessor extends AbstractLayoutCodeProcessor {
         .getLinkedProjectSettings(Objects.requireNonNull(myProject.getBasePath())));
 
     if (maybeProjectSettings.isEmpty()) {
-      LOG.error("Unable to parse linked project settings, leaving off `--no-configuration-cache` argument");
+      LOG.warn("Unable to parse linked project settings, leaving off `--no-configuration-cache` argument");
       return false;
     }
 
