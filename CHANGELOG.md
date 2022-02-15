@@ -4,8 +4,10 @@
 
 ## [Unreleased]
 
+## [1.0.6]
+* Change LOG.error to LOG.warn to avoid thrown exception.
+
 ## [1.0.5]
-* Add handling for failure to parse project settings (we default to leave off `spotlessApply` option) until JetBrains gets back on alternatives.
 
 ## [1.0.4]
 - Add Gradle version parsing to determine if we should append `--no-configuration-cache` option to the `spotlessApply` command.
