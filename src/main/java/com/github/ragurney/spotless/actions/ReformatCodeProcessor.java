@@ -22,10 +22,12 @@ import com.intellij.util.IncorrectOperationException;
 import com.intellij.util.SlowOperations;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.FutureTask;
 import org.gradle.util.GradleVersion;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.plugins.gradle.settings.GradleProjectSettings;
 import org.jetbrains.plugins.gradle.settings.GradleSettings;
 import org.jetbrains.plugins.gradle.util.GradleConstants;
 
@@ -110,9 +112,15 @@ public class ReformatCodeProcessor extends AbstractLayoutCodeProcessor {
   }
 
   private boolean shouldAddNoConfigCacheOption() {
-    GradleVersion gradleVersion = Objects.requireNonNull(
-        GradleSettings.getInstance(myProject).getLinkedProjectSettings(Objects.requireNonNull(myProject.getBasePath())))
-        .resolveGradleVersion();
+    Optional<GradleProjectSettings> maybeProjectSettings = Optional.ofNullable(GradleSettings.getInstance(myProject)
+        .getLinkedProjectSettings(Objects.requireNonNull(myProject.getBasePath())));
+
+    if (maybeProjectSettings.isEmpty()) {
+      LOG.error("Unable to parse linked project settings, leaving off `--no-configuration-cache` argument");
+      return false;
+    }
+
+    GradleVersion gradleVersion = maybeProjectSettings.get().resolveGradleVersion();
 
     return Objects.requireNonNull(Version.parseVersion(gradleVersion.getVersion()))
         .isOrGreaterThan(NO_CONFIG_CACHE_MIN_GRADLE_VERSION.major, NO_CONFIG_CACHE_MIN_GRADLE_VERSION.minor);
