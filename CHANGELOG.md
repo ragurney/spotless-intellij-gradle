@@ -8,6 +8,7 @@
 * Bump highest supported version to 2022.1 @RinOrz
 
 ## [1.0.6]
+* Change LOG.error to LOG.warn to avoid thrown exception.
 
 ## [1.0.5]
 
