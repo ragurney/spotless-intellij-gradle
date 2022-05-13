@@ -30,14 +30,14 @@ public class SpotlessConfiguration
   }
 
   public boolean isRunOnSaveEnabled() {
-    return state.myRunOnSave;
+    return state.runOnSave;
   }
 
   public void setRunOnSave(boolean runOnSave) {
-    state.myRunOnSave = runOnSave;
+    state.runOnSave = runOnSave;
   }
 
   static class State {
-    public boolean myRunOnSave = SPOTLESS_ON_SAVE_DEFAULT;
+    public boolean runOnSave = SPOTLESS_ON_SAVE_DEFAULT;
   }
 }
