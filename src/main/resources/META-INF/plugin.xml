@@ -15,4 +15,14 @@
             <add-to-group group-id="CodeFormatGroup" relative-to-action="ReformatCode" anchor="before"/>
         </action>
     </actions>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <projectService serviceImplementation="com.github.ragurney.spotless.config.SpotlessConfiguration"/>
+        <actionOnSaveInfoProvider id="SpotlessOnSaveInfoProvider"
+                                  implementation="com.github.ragurney.spotless.config.SpotlessOnSaveInfoProvider"
+                                  order="after FormatOnSaveInfoProvider, before BuildOnSaveInfoProvider, before FileWatcherOnSaveInfoProvider, before UploadOnSaveInfoProvider"/>
+        <actionOnSave id="SpotlessActionOnSave"
+                      implementation="com.github.ragurney.spotless.actions.SpotlessActionOnSave"
+                      order="after FormatOnSaveAction"/>
+    </extensions>
 </idea-plugin>
