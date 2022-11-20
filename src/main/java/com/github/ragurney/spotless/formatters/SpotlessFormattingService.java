@@ -1,9 +1,8 @@
-package com.github.ragurney.spotless.actions;
+package com.github.ragurney.spotless.formatters;
 
-import com.intellij.CodeStyleBundle;
-import com.intellij.codeInsight.actions.AbstractLayoutCodeProcessor;
-import com.intellij.codeInsight.actions.LayoutCodeInfoCollector;
 import com.intellij.execution.executors.DefaultRunExecutor;
+import com.intellij.formatting.service.AsyncDocumentFormattingService;
+import com.intellij.formatting.service.AsyncFormattingRequest;
 import com.intellij.lang.Language;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.editor.Document;
@@ -11,7 +10,8 @@ import com.intellij.openapi.editor.ex.util.EditorScrollingPositionKeeper;
 import com.intellij.openapi.externalSystem.model.execution.ExternalSystemTaskExecutionSettings;
 import com.intellij.openapi.externalSystem.service.execution.ProgressExecutionMode;
 import com.intellij.openapi.externalSystem.util.ExternalSystemUtil;
-import com.intellij.openapi.util.NlsContexts;
+import com.intellij.openapi.project.Project;
+import com.intellij.openapi.util.NlsSafe;
 import com.intellij.openapi.util.Version;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.FileViewProvider;
@@ -19,10 +19,10 @@ import com.intellij.psi.PsiDocumentManager;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiInvalidElementAccessException;
 import com.intellij.util.IncorrectOperationException;
-import com.intellij.util.SlowOperations;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.FutureTask;
 import org.gradle.util.GradleVersion;
 import org.jetbrains.annotations.NotNull;
@@ -32,20 +32,50 @@ import org.jetbrains.plugins.gradle.settings.GradleSettings;
 import org.jetbrains.plugins.gradle.util.GradleConstants;
 
 
-/**
- * A code processor used to execute the spotlessApply gradle task on the current file to reformat it
- */
-public class ReformatCodeProcessor extends AbstractLayoutCodeProcessor {
-  private static final Logger LOG = Logger.getInstance(ReformatCodeProcessor.class);
+public class SpotlessFormattingService extends AsyncDocumentFormattingService {
+  private static final Logger LOG = Logger.getInstance(SpotlessFormattingService.class);
   private static final Version NO_CONFIG_CACHE_MIN_GRADLE_VERSION = new Version(6, 6, 0);
+  @Override
+  protected @Nullable FormattingTask createFormattingTask(@NotNull AsyncFormattingRequest formattingRequest) {
+    FutureTask<Boolean> formattingTask = createTask(formattingRequest);
 
-  public ReformatCodeProcessor(@NotNull PsiFile file) {
-    super(file.getProject(), file, getProgressText(), getCommandName(), true);
+    return new FormattingTask() {
+      @Override
+      public boolean cancel() {
+        return formattingTask.cancel(/* mayInterruptIfRunning= */ true);
+      }
+
+      @Override
+      public void run() {
+        formattingTask.run();
+      }
+    };
   }
 
   @Override
-  protected @NotNull FutureTask<Boolean> prepareTask(@NotNull PsiFile file, boolean processChangedTextOnly)
-      throws IncorrectOperationException {
+  protected @NotNull String getNotificationGroupId() {
+    return null;
+  }
+
+  @Override
+  protected @NotNull @NlsSafe String getName() {
+    return "Spotless";
+  }
+
+  @Override
+  public @NotNull Set<Feature> getFeatures() {
+    return null;
+  }
+
+  @Override
+  public boolean canFormat(@NotNull PsiFile file) {
+    return true;
+  }
+
+  private FutureTask<Boolean> createTask(AsyncFormattingRequest formattingRequest) {
+    Project project = formattingRequest.getContext().getProject();
+    PsiFile file = formattingRequest.getContext().getContainingFile();
+
     return new FutureTask<>(() -> {
       try {
         PsiFile fileToProcess = ensureValid(file);
@@ -53,12 +83,11 @@ public class ReformatCodeProcessor extends AbstractLayoutCodeProcessor {
           return false;
         }
 
-        Document document = PsiDocumentManager.getInstance(myProject).getDocument(fileToProcess);
+        Document document = PsiDocumentManager.getInstance(project).getDocument(fileToProcess);
 
-        final LayoutCodeInfoCollector infoCollector = getInfoCollector();
-        LOG.assertTrue(infoCollector == null || document != null);
+        LOG.assertTrue(document != null);
 
-        reformatFilePreservingScrollPosition(fileToProcess, document);
+        reformatFilePreservingScrollPosition(fileToProcess, project);
 
         return true;
       } catch (IncorrectOperationException e) {
@@ -69,23 +98,25 @@ public class ReformatCodeProcessor extends AbstractLayoutCodeProcessor {
   }
 
   /**
-   * Executes the spotlessApply task for the current file, using the {@link EditorScrollingPositionKeeper} to maintain scroll position.
-   * The gradle task is executed asynchronously in the background of the IDE.
+   * Executes the spotlessApply task for the current file, using the {@link EditorScrollingPositionKeeper} to maintain
+   * scroll position. The gradle task is executed asynchronously in the background of the IDE.
    *
    * @param fileToProcess the file to format using spotlessApply
-   * @param document the {@link Document} of the file
    */
-  private void reformatFilePreservingScrollPosition(PsiFile fileToProcess, Document document) {
-    EditorScrollingPositionKeeper.perform(document, true, () -> SlowOperations.allowSlowOperations(() -> {
-      assertFileIsValid(fileToProcess);
-
+  private void reformatFilePreservingScrollPosition(PsiFile fileToProcess, Project project) {
       // Constructs execution settings, setting the gradle task and its options
-      ExternalSystemTaskExecutionSettings settings = constructTaskExecutionSettings(fileToProcess);
+      ExternalSystemTaskExecutionSettings settings = constructTaskExecutionSettings(fileToProcess, project);
 
       // Execute gradle task
-      ExternalSystemUtil.runTask(settings, DefaultRunExecutor.EXECUTOR_ID, myProject, GradleConstants.SYSTEM_ID, null,
+      ExternalSystemUtil.runTask(settings, DefaultRunExecutor.EXECUTOR_ID, project, GradleConstants.SYSTEM_ID, null,
           ProgressExecutionMode.IN_BACKGROUND_ASYNC, false);
-    }));
+  }
+
+  private static void assertFileIsValid(@NotNull PsiFile file) {
+    if (!file.isValid()) {
+      LOG.error("Invalid Psi file, name: " + file.getName() + " , class: " + file.getClass().getSimpleName() + " , "
+          + PsiInvalidElementAccessException.findOutInvalidationReason(file));
+    }
   }
 
   /**
@@ -95,14 +126,15 @@ public class ReformatCodeProcessor extends AbstractLayoutCodeProcessor {
    *
    * {@link ExternalSystemUtil}
    * @param fileToProcess the file selected to format
+   * @param project the project of the file
    * @return {@link ExternalSystemTaskExecutionSettings} populated with spotlessApply task and IDE flag set
    */
   @NotNull
-  private ExternalSystemTaskExecutionSettings constructTaskExecutionSettings(PsiFile fileToProcess) {
-    String noConfigCacheOption = shouldAddNoConfigCacheOption() ? " --no-configuration-cache" : "";
+  private ExternalSystemTaskExecutionSettings constructTaskExecutionSettings(PsiFile fileToProcess, Project project) {
+    String noConfigCacheOption = shouldAddNoConfigCacheOption(project) ? " --no-configuration-cache" : "";
 
     ExternalSystemTaskExecutionSettings settings = new ExternalSystemTaskExecutionSettings();
-    settings.setExternalProjectPath(myProject.getBasePath());
+    settings.setExternalProjectPath(project.getBasePath());
     settings.setTaskNames(List.of("spotlessApply"));
     settings.setScriptParameters(
         String.format("-PspotlessIdeHook=\"%s\"%s", fileToProcess.getVirtualFile().getPath(), noConfigCacheOption));
@@ -111,9 +143,9 @@ public class ReformatCodeProcessor extends AbstractLayoutCodeProcessor {
     return settings;
   }
 
-  private boolean shouldAddNoConfigCacheOption() {
-    Optional<GradleProjectSettings> maybeProjectSettings = Optional.ofNullable(GradleSettings.getInstance(myProject)
-        .getLinkedProjectSettings(Objects.requireNonNull(myProject.getBasePath())));
+  private boolean shouldAddNoConfigCacheOption(Project project) {
+    Optional<GradleProjectSettings> maybeProjectSettings = Optional.ofNullable(GradleSettings.getInstance(project)
+        .getLinkedProjectSettings(Objects.requireNonNull(project.getBasePath())));
 
     if (maybeProjectSettings.isEmpty()) {
       LOG.warn("Unable to parse linked project settings, leaving off `--no-configuration-cache` argument");
@@ -144,22 +176,5 @@ public class ReformatCodeProcessor extends AbstractLayoutCodeProcessor {
 
     Language language = file.getLanguage();
     return provider.hasLanguage(language) ? provider.getPsi(language) : provider.getPsi(provider.getBaseLanguage());
-  }
-
-  private static void assertFileIsValid(@NotNull PsiFile file) {
-    if (!file.isValid()) {
-      LOG.error("Invalid Psi file, name: " + file.getName() + " , class: " + file.getClass().getSimpleName() + " , "
-          + PsiInvalidElementAccessException.findOutInvalidationReason(file));
-    }
-  }
-
-  @SuppressWarnings("UnstableApiUsage")
-  private static @NlsContexts.ProgressText String getProgressText() {
-    return CodeStyleBundle.message("reformat.progress.common.text");
-  }
-
-  @SuppressWarnings("UnstableApiUsage")
-  public static @NlsContexts.Command String getCommandName() {
-    return CodeStyleBundle.message("process.reformat.code");
   }
 }
