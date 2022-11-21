@@ -9,9 +9,11 @@ import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.editor.ex.util.EditorScrollingPositionKeeper;
 import com.intellij.openapi.externalSystem.model.execution.ExternalSystemTaskExecutionSettings;
 import com.intellij.openapi.externalSystem.service.execution.ProgressExecutionMode;
+import com.intellij.openapi.externalSystem.task.TaskCallback;
 import com.intellij.openapi.externalSystem.util.ExternalSystemUtil;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.NlsSafe;
+import com.intellij.openapi.util.TextRange;
 import com.intellij.openapi.util.Version;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.FileViewProvider;
@@ -19,11 +21,18 @@ import com.intellij.psi.PsiDocumentManager;
 import com.intellij.psi.PsiFile;
 import com.intellij.psi.PsiInvalidElementAccessException;
 import com.intellij.util.IncorrectOperationException;
+import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
+import java.util.concurrent.Semaphore;
 import org.gradle.util.GradleVersion;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -35,26 +44,65 @@ import org.jetbrains.plugins.gradle.util.GradleConstants;
 public class SpotlessFormattingService extends AsyncDocumentFormattingService {
   private static final Logger LOG = Logger.getInstance(SpotlessFormattingService.class);
   private static final Version NO_CONFIG_CACHE_MIN_GRADLE_VERSION = new Version(6, 6, 0);
+
+  public static final String NOTIFICATION_GROUP_ID = "INTELLIJ GRADLE SPOTLESS";
+
+  private static final Set<Feature> FEATURES = EnumSet.noneOf(Feature.class);
+
   @Override
   protected @Nullable FormattingTask createFormattingTask(@NotNull AsyncFormattingRequest formattingRequest) {
-    FutureTask<Boolean> formattingTask = createTask(formattingRequest);
+    Semaphore done = new Semaphore(1);
 
     return new FormattingTask() {
       @Override
+      public boolean isRunUnderProgress() {
+        return true;
+      }
+
+      @Override
       public boolean cancel() {
-        return formattingTask.cancel(/* mayInterruptIfRunning= */ true);
+        return false;
       }
 
       @Override
       public void run() {
-        formattingTask.run();
+        System.out.println("hello");
+        try {
+          done.acquire();
+        } catch (InterruptedException e) {
+          LOG.warn("Tried to reformat when reformatting is already underway.");
+          return;
+        }
+
+        Project project = formattingRequest.getContext().getProject();
+        TextRange textRange = formattingRequest.getFormattingRanges().get(0);
+        PsiFile file = formattingRequest.getContext().getContainingFile();
+
+        String textToFormat = file.getViewProvider().getDocument().getText(textRange);
+
+        try {
+          PsiFile fileToProcess = ensureValid(file);
+          if (fileToProcess == null) {
+            return;
+          }
+
+          Document document = PsiDocumentManager.getInstance(project).getDocument(fileToProcess);
+          LOG.assertTrue(document != null);
+
+          reformatFilePreservingScrollPosition(textToFormat,fileToProcess, project, () -> {
+            formattingRequest.onTextReady("");
+            done.release();
+          });
+        } catch (IncorrectOperationException e) {
+          LOG.error(e);
+        }
       }
     };
   }
 
   @Override
   protected @NotNull String getNotificationGroupId() {
-    return null;
+    return NOTIFICATION_GROUP_ID;
   }
 
   @Override
@@ -64,37 +112,12 @@ public class SpotlessFormattingService extends AsyncDocumentFormattingService {
 
   @Override
   public @NotNull Set<Feature> getFeatures() {
-    return null;
+    return FEATURES;
   }
 
   @Override
   public boolean canFormat(@NotNull PsiFile file) {
     return true;
-  }
-
-  private FutureTask<Boolean> createTask(AsyncFormattingRequest formattingRequest) {
-    Project project = formattingRequest.getContext().getProject();
-    PsiFile file = formattingRequest.getContext().getContainingFile();
-
-    return new FutureTask<>(() -> {
-      try {
-        PsiFile fileToProcess = ensureValid(file);
-        if (fileToProcess == null) {
-          return false;
-        }
-
-        Document document = PsiDocumentManager.getInstance(project).getDocument(fileToProcess);
-
-        LOG.assertTrue(document != null);
-
-        reformatFilePreservingScrollPosition(fileToProcess, project);
-
-        return true;
-      } catch (IncorrectOperationException e) {
-        LOG.error(e);
-        return false;
-      }
-    });
   }
 
   /**
@@ -103,13 +126,23 @@ public class SpotlessFormattingService extends AsyncDocumentFormattingService {
    *
    * @param fileToProcess the file to format using spotlessApply
    */
-  private void reformatFilePreservingScrollPosition(PsiFile fileToProcess, Project project) {
-      // Constructs execution settings, setting the gradle task and its options
-      ExternalSystemTaskExecutionSettings settings = constructTaskExecutionSettings(fileToProcess, project);
+  private void reformatFilePreservingScrollPosition(String textToFormat, PsiFile fileToProcess, Project project, Runnable callback) {
+    // Constructs execution settings, setting the gradle task and its options
+    ExternalSystemTaskExecutionSettings settings = constructTaskExecutionSettings(textToFormat, fileToProcess, project);
 
-      // Execute gradle task
-      ExternalSystemUtil.runTask(settings, DefaultRunExecutor.EXECUTOR_ID, project, GradleConstants.SYSTEM_ID, null,
-          ProgressExecutionMode.IN_BACKGROUND_ASYNC, false);
+    // Execute gradle task
+    ExternalSystemUtil.runTask(settings, DefaultRunExecutor.EXECUTOR_ID, project, GradleConstants.SYSTEM_ID,
+        new TaskCallback() {
+          @Override
+          public void onSuccess() {
+            callback.run();
+          }
+
+          @Override
+          public void onFailure() {
+            callback.run();
+          }
+        }, ProgressExecutionMode.IN_BACKGROUND_ASYNC, false);
   }
 
   private static void assertFileIsValid(@NotNull PsiFile file) {
@@ -130,22 +163,32 @@ public class SpotlessFormattingService extends AsyncDocumentFormattingService {
    * @return {@link ExternalSystemTaskExecutionSettings} populated with spotlessApply task and IDE flag set
    */
   @NotNull
-  private ExternalSystemTaskExecutionSettings constructTaskExecutionSettings(PsiFile fileToProcess, Project project) {
-    String noConfigCacheOption = shouldAddNoConfigCacheOption(project) ? " --no-configuration-cache" : "";
-
+  private ExternalSystemTaskExecutionSettings constructTaskExecutionSettings(String textToFormat, PsiFile fileToProcess, Project project) {
     ExternalSystemTaskExecutionSettings settings = new ExternalSystemTaskExecutionSettings();
     settings.setExternalProjectPath(project.getBasePath());
     settings.setTaskNames(List.of("spotlessApply"));
-    settings.setScriptParameters(
-        String.format("-PspotlessIdeHook=\"%s\"%s", fileToProcess.getVirtualFile().getPath(), noConfigCacheOption));
+
+    //TODO: SET STDIN???!!!
+
+    List<String> paramList = new ArrayList<>();
+    // Set the file to execute Spotless on
+    paramList.add(String.format("-PspotlessIdeHook=\"%s\"", fileToProcess.getVirtualFile().getPath()));
+    // Set no config cache option if necessary, determined by Gradle version
+    if (shouldAddNoConfigCacheOption(project)) {
+      paramList.add("--no-configuration-cache");
+    }
+    // Tell Spotless to use stdIn to support format by range
+    paramList.add("-PspotlessIdeHookUseStdIn");
+
+    settings.setScriptParameters(String.join(" ", paramList));
     settings.setVmOptions("");
     settings.setExternalSystemIdString(GradleConstants.SYSTEM_ID.getId());
     return settings;
   }
 
   private boolean shouldAddNoConfigCacheOption(Project project) {
-    Optional<GradleProjectSettings> maybeProjectSettings = Optional.ofNullable(GradleSettings.getInstance(project)
-        .getLinkedProjectSettings(Objects.requireNonNull(project.getBasePath())));
+    Optional<GradleProjectSettings> maybeProjectSettings = Optional.ofNullable(
+        GradleSettings.getInstance(project).getLinkedProjectSettings(Objects.requireNonNull(project.getBasePath())));
 
     if (maybeProjectSettings.isEmpty()) {
       LOG.warn("Unable to parse linked project settings, leaving off `--no-configuration-cache` argument");
