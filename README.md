@@ -35,7 +35,9 @@ correctly in your Gradle build file. (Run ./gradlew spotlessDiagnose to prepare 
 
 ## How it Works
 This plugin runs the `spotlessApply` Gradle task on the current file using the [Spotless IDE hook](https://github.com/diffplug/spotless/blob/main/plugin-gradle/IDE_HOOK.md). 
-  
+## Contributing
+See [CONTRIBUTING.md](CONTRIBUTING.md)
+
 ## Release Notes
 See [CHANGELOG.md](CHANGELOG.md)
 
