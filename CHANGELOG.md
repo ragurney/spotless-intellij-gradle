@@ -4,9 +4,10 @@
 
 ## [Unreleased]
 
+## [1.0.9]
+- Bump latest version of IntelliJ supported
+
 ## [1.0.8]
-* Bump supported version to 2022.2 and some dependencies. 
-* Remove set version for gradle plugin to allow for broader support.
 
 ## [1.0.7]
 
