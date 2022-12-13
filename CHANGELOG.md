@@ -4,6 +4,11 @@
 
 ## [Unreleased]
 
+## [1.0.10]
+Remove upper bound for `untilBuild` to prevent plugin being outdated for new IntelliJ clients.
+
+No logical changes made to the plugin.
+
 ## [1.0.9]
 - Bump latest version of IntelliJ supported
 
