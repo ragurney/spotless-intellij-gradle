@@ -38,9 +38,15 @@ import org.jetbrains.plugins.gradle.util.GradleConstants;
 public class ReformatCodeProcessor extends AbstractLayoutCodeProcessor {
   private static final Logger LOG = Logger.getInstance(ReformatCodeProcessor.class);
   private static final Version NO_CONFIG_CACHE_MIN_GRADLE_VERSION = new Version(6, 6, 0);
+  private boolean isReformatAllEnabled = false;
 
   public ReformatCodeProcessor(@NotNull PsiFile file) {
     super(file.getProject(), file, getProgressText(), getCommandName(), true);
+  }
+
+  public ReformatCodeProcessor(@NotNull PsiFile file, boolean reformatAll) {
+    super(file.getProject(), file, getProgressText(), getCommandName(), true);
+    this.isReformatAllEnabled = reformatAll;
   }
 
   @Override
@@ -104,8 +110,10 @@ public class ReformatCodeProcessor extends AbstractLayoutCodeProcessor {
     ExternalSystemTaskExecutionSettings settings = new ExternalSystemTaskExecutionSettings();
     settings.setExternalProjectPath(myProject.getBasePath());
     settings.setTaskNames(List.of("spotlessApply"));
-    settings.setScriptParameters(
-        String.format("-PspotlessIdeHook=\"%s\"%s", fileToProcess.getVirtualFile().getPath(), noConfigCacheOption));
+    if (!isReformatAllEnabled) {
+      settings.setScriptParameters(
+          String.format("-PspotlessIdeHook=\"%s\"%s", fileToProcess.getVirtualFile().getPath(), noConfigCacheOption));
+    }
     settings.setVmOptions("");
     settings.setExternalSystemIdString(GradleConstants.SYSTEM_ID.getId());
     return settings;
