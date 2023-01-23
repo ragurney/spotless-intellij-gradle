@@ -13,9 +13,9 @@ import java.util.Optional;
 
 
 /**
- * The action which is called on "Reformat All Files."
+ * The action which is called on "Reformat All Files With Spotless".
  */
-public class ReformatProjectAction extends AnAction {
+public class ReformatAllFilesAction extends AnAction {
 
   @Override
   public void actionPerformed(@NotNull AnActionEvent event) {
