@@ -13,10 +13,10 @@ import org.jetbrains.annotations.NotNull;
 
 
 /**
- * The action which is called on "Reformat Code with Spotless."
+ * The action which is called on "Reformat File With Spotless".
  */
-public class ReformatCodeAction extends AnAction {
-  private static final Logger LOG = Logger.getInstance(ReformatCodeAction.class);
+public class ReformatFileAction extends AnAction {
+  private static final Logger LOG = Logger.getInstance(ReformatFileAction.class);
 
   @Override
   public void actionPerformed(@NotNull AnActionEvent event) {

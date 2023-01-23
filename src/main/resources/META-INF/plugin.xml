@@ -8,11 +8,17 @@
     <depends>com.intellij.gradle</depends>
 
     <actions>
-        <action id="com.github.ragurney.spotless.actions.ReformatCodeAction"
-                class="com.github.ragurney.spotless.actions.ReformatCodeAction" text="Reformat Code with Spotless"
+        <action id="com.github.ragurney.spotless.actions.ReformatFileAction"
+                class="com.github.ragurney.spotless.actions.ReformatFileAction" text="Reformat File With Spotless"
                 icon="SpotlessIcons.SPOTLESS_DEFAULT_ICON"
-                description="Reformats code with Spotless">
+                description="Reformats current file with Spotless">
             <add-to-group group-id="CodeFormatGroup" relative-to-action="ReformatCode" anchor="before"/>
+        </action>
+        <action id="com.github.ragurney.spotless.actions.ReformatAllFilesAction"
+                class="com.github.ragurney.spotless.actions.ReformatAllFilesAction" text="Reformat All Files With Spotless"
+                icon="SpotlessIcons.SPOTLESS_DEFAULT_ICON"
+                description="Reformats all files with Spotless">
+            <add-to-group group-id="CodeFormatGroup" relative-to-action="ReformatCode" anchor="before" />
         </action>
     </actions>
 </idea-plugin>
