@@ -7,14 +7,10 @@ import com.intellij.openapi.actionSystem.DataContext;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.Project;
 import com.intellij.psi.PsiDocumentManager;
+import java.util.Optional;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Optional;
-
-
-/**
- * The action which is called on "Reformat All Files With Spotless".
- */
+/** The action which is called on "Reformat All Files With Spotless". */
 public class ReformatAllFilesAction extends AnAction {
 
   @Override

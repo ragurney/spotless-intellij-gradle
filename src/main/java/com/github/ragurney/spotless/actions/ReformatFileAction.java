@@ -11,10 +11,7 @@ import com.intellij.psi.PsiDocumentManager;
 import com.intellij.psi.PsiFile;
 import org.jetbrains.annotations.NotNull;
 
-
-/**
- * The action which is called on "Reformat File With Spotless".
- */
+/** The action which is called on "Reformat File With Spotless". */
 public class ReformatFileAction extends AnAction {
   private static final Logger LOG = Logger.getInstance(ReformatFileAction.class);
 

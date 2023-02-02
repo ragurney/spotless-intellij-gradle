@@ -14,6 +14,8 @@ plugins {
     id("org.jetbrains.changelog") version "1.3.1"
     // Gradle Qodana Plugin
     id("org.jetbrains.qodana") version "0.1.13"
+    //  Spotless
+    id("com.diffplug.spotless") version "6.12.0"
 }
 
 group = properties("pluginGroup")
@@ -46,6 +48,13 @@ qodana {
     reportPath.set(projectDir.resolve("build/reports/inspections").canonicalPath)
     saveReport.set(true)
     showReport.set(System.getenv("QODANA_SHOW_REPORT")?.toBoolean() ?: false)
+}
+
+subprojects {
+    apply {
+        plugin("com.diffplug.spotless")
+    }
+
 }
 
 tasks {
@@ -112,5 +121,13 @@ tasks {
         // Specify pre-release label to publish the plugin in a custom Release Channel automatically. Read more:
         // https://plugins.jetbrains.com/docs/intellij/deployment.html#specifying-a-release-channel
         channels.set(listOf(properties("pluginVersion").split('-').getOrElse(1) { "default" }.split('.').first()))
+    }
+}
+
+spotless {
+    java {
+        importOrder()
+        removeUnusedImports()
+        googleJavaFormat()
     }
 }
