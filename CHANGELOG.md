@@ -4,10 +4,14 @@
 
 ## [Unreleased]
 
-## [1.0.10]
-Remove upper bound for `untilBuild` to prevent plugin being outdated for new IntelliJ clients.
+## [2.0.0]
+Introduce new "Reformat all files" command to run Spotless on all files in a project rather than just the current one. 
 
-No logical changes made to the plugin.
+This may unbind current keyboard shortcuts, hence the major version bump. 
+
+Logic for reformatting the current file remains unchanged.
+
+## [1.0.10]
 
 ## [1.0.9]
 - Bump latest version of IntelliJ supported
