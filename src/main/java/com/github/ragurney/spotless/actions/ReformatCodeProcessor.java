@@ -90,22 +90,33 @@ public class ReformatCodeProcessor extends AbstractLayoutCodeProcessor {
         () ->
             SlowOperations.allowSlowOperations(
                 () -> {
-                  assertFileIsValid(fileToProcess);
-
-                  // Constructs execution settings, setting the gradle task and its options
-                  ExternalSystemTaskExecutionSettings settings =
-                      constructTaskExecutionSettings(fileToProcess);
-
-                  // Execute gradle task
-                  ExternalSystemUtil.runTask(
-                      settings,
-                      DefaultRunExecutor.EXECUTOR_ID,
-                      myProject,
-                      GradleConstants.SYSTEM_ID,
-                      null,
-                      ProgressExecutionMode.IN_BACKGROUND_ASYNC,
-                      false);
+                  formatFile(fileToProcess, ProgressExecutionMode.IN_BACKGROUND_ASYNC);
                 }));
+  }
+
+  /**
+   * Formats the file using the spotlessApply gradle task.
+   *
+   * <p>See {@link ProgressExecutionMode}
+   *
+   * @param fileToProcess the file to format
+   * @param mode Execution mode for the gradle task
+   */
+  public void formatFile(PsiFile fileToProcess, ProgressExecutionMode mode) {
+    assertFileIsValid(fileToProcess);
+
+    // Constructs execution settings, setting the gradle task and its options
+    ExternalSystemTaskExecutionSettings settings = constructTaskExecutionSettings(fileToProcess);
+
+    // Execute gradle task
+    ExternalSystemUtil.runTask(
+        settings,
+        DefaultRunExecutor.EXECUTOR_ID,
+        myProject,
+        GradleConstants.SYSTEM_ID,
+        null,
+        mode,
+        false);
   }
 
   /**
