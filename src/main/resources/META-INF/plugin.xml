@@ -7,6 +7,10 @@
     <depends>com.intellij.modules.platform</depends>
     <depends>com.intellij.gradle</depends>
 
+    <extensions defaultExtensionNs="com.intellij">
+        <checkinHandlerFactory implementation="com.github.ragurney.spotless.trigger.SpotlessCheckinHandlerFactory"/>
+    </extensions>
+
     <actions>
         <action id="com.github.ragurney.spotless.actions.ReformatFileAction"
                 class="com.github.ragurney.spotless.actions.ReformatFileAction" text="Reformat File With Spotless"
